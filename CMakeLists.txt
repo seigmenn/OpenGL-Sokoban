@@ -34,10 +34,27 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 set(GLFW_VULKAN_STATIC OFF CACHE BOOL "" FORCE)
 
+# Add external dependencies or third-party libraries for the project. The 'add_subdirectory'
+# command adds a sub-directory to the build, which should contain its own 'CMakeLists.txt'.
+# 'glad', 'glfw', 'glm', and 'tinyobjloader' are some common libraries used in OpenGL projects.
+# In this project, these libraries are git submodules; make sure you pull them correctly
+# (e.g., git clone ..... --recursive)
+add_subdirectory(external/glad)
+add_subdirectory(external/glfw)
+add_subdirectory(external/glm)
+
+
+# Create a header-only interface for the 'stb' library. Since 'stb' typically consists
+# of single-header libraries, this approach makes it easy to integrate into the project.
+add_library(stb INTERFACE
+        exam/FinalApplication.cpp
+        exam/FinalApplication.h
+        exam/Exam.cpp)
+target_include_directories(stb INTERFACE external/stb)
 # Add a subdirectory for a framework. This line is commented out, possibly because the
 # framework is either under development or optional.
-add_subdirectory(framework/GLFWApplication)
 add_subdirectory(framework/GeometricTools)
+add_subdirectory(framework/GLFWAppliction)
 add_subdirectory(framework/Rendering)
 
 

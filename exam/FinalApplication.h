@@ -6,7 +6,7 @@
 #define EXAMAUTUMN2023_FINALAPPLICATION_H
 
 #include <string>
-#include "/framework/GLFWAppliction/GLFWApplication.h"
+#include "GLFWApplication.h"
 
 
 class FinalApplication : public GLFWApplication
