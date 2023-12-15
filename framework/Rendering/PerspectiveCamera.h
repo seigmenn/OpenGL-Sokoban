@@ -22,7 +22,7 @@ public:
 
 public:
     PerspectiveCamera(const Frustrum& frustrum = { 45.0f, 800.0f, 600.0f, 1.0f, -10.0f },
-        const glm::vec3& position = glm::vec3(0.0f, 1.0f, 3.0f),
+        const glm::vec3& position = glm::vec3(0.0f, 2.0f, 3.0f),
         const glm::vec3& lookAt = glm::vec3(0.0f),
         const glm::vec3& upVector = glm::vec3(0.0f, 1.0f, 0.0f)){
 

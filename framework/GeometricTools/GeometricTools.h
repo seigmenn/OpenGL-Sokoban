@@ -183,28 +183,41 @@ namespace GeometricTools {
 		return vbo;
 	}
 
-	template<typename T, typename U>
-	std::vector<unsigned int>	ChessIndices(T X, U Y) {
-		std::vector<unsigned int> indices;
-		indices.resize(X * Y * 6);
-		int counter = 0;
-		unsigned int offset = 0;
 
-		for (int i = 0; i < Y; i++) {
-			for (int j = 0; j < X; j++) {
-				
-					indices[counter++] = j + offset;
-					indices[counter++] = j + 9 + offset;
-					indices[counter++] = j + 10 + offset;
+    template<typename T, typename U>
+    std::vector<unsigned int> ChessIndices(T X, U Y) {
+        std::vector<unsigned int> indices;
+        indices.resize(X * Y * 6);
+        int counter = 0;
 
-					indices[counter++] = j + offset;
-					indices[counter++] = j + 1 + offset;
-					indices[counter++] = j + 10 + offset;
-			}
-			offset += 9;
-		}
-	return indices;
-	}
+        for (unsigned int j = 0; j < Y; ++j) {
+            for (unsigned int i = 0; i < X; ++i) {
+                unsigned int baseIndex = j * (X + 1) + i;
+
+                // Define indices for the two triangles forming a square
+                indices[counter++] = baseIndex;
+                indices[counter++] = baseIndex + X + 1;
+                indices[counter++] = baseIndex + X + 2;
+
+                indices[counter++] = baseIndex;
+                indices[counter++] = baseIndex + 1;
+                indices[counter++] = baseIndex + X + 2;
+            }
+        }
+        return indices;
+    }
+
+    template<typename T>
+    std::vector<float> Cube3DWNormals(T X) {
+        std::vector<float>cube;
+        cube.resize(3 * 24 * 2);
+        for (int i = 0; i < cube.size(); i++)
+        {
+            cube[i] = UnitCube3D24WNormals[i] / X;
+        }
+        return cube;
+    };
+
 
 
 }

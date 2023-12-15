@@ -36,7 +36,6 @@ const std::string ChessBoardFragmentShader = R"(
 
             uniform vec3 u_color1 = vec3(0.0);
             uniform vec3 u_color2 = vec3(1.0);
-            uniform vec2 u_selectorPos = vec2(0.0);
             uniform vec3 u_selectorCol = vec3(0.0f,1.0f,0.0f);
             uniform vec2 u_divisions = vec2(0.0);
             uniform int u_texture = 0;
@@ -58,12 +57,7 @@ const std::string ChessBoardFragmentShader = R"(
                          fragColor = vec4(u_color1,1.0);
                      }
                 }
-                vec2 selector_centered = u_selectorPos - vec2(0.5);
 
-                if(vs_tcoords.x < (u_selectorPos.x+1)/u_divisions.x - 0.5 && vs_tcoords.x > u_selectorPos.x/u_divisions.x -0.5 &&
-                   vs_tcoords.y < (u_selectorPos.y+1)/u_divisions.y - 0.5 && vs_tcoords.y > u_selectorPos.y/u_divisions.y -0.5 ){
-                   fragColor = vec4(u_selectorCol,1.0);
-                }
 
                 if(u_texture == 1)
                 {
@@ -115,6 +109,52 @@ std::string ChessPieceVertexShader = R"(
         vs_pos = u_pieceModMat * vec4(position,1.0f);
         vs_texPos = position;
     }
+)";
+
+std::string pillarVertexShader = R"(
+    #version 460 core
+
+    layout (location = 0) in vec3 position;
+
+
+    out vec4 vs_pos;
+    out vec3 vs_texPos;
+
+    uniform mat4 u_pieceModMat;
+    uniform mat4 u_pieceViewProjMat;
+
+    void main(){
+        gl_Position = u_pieceViewProjMat * u_pieceModMat * vec4(position,1.0f);
+        vs_pos = vec4(position,1.0f) *u_pieceModMat;
+    vs_texPos = position;
+    }
+
+)";
+std::string pillarFragmentShader = R"(
+    #version 460 core
+
+    in vec4 vs_pos;
+    in vec3 vs_texPos;
+
+    out vec4 finalColor;
+    out vec4 fragPos;
+
+    uniform vec4 u_cubeColor;
+    uniform int u_texture = 0;
+
+    layout(binding = 1) uniform samplerCube u_pieceTextureSampler;
+
+    void main()
+    {
+        finalColor = u_cubeColor;
+        if(u_texture == 1)
+        {
+            finalColor = mix(u_cubeColor,texture(u_pieceTextureSampler, vs_texPos),0.5);
+        }
+
+        fragPos = vs_pos;
+    }
+
 )";
 
 #endif //EXAMAUTUMN2023_SHADERS_H
