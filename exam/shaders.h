@@ -41,6 +41,8 @@ const std::string ChessBoardFragmentShader = R"(
             uniform vec3 u_lightColor;
             uniform vec3 u_viewPos;
             uniform float ambientStrength;
+            uniform float specularStrength;
+            uniform float diffuseStrength;
 
 
             layout(binding=0) uniform sampler2D u_floorTextureSampler;
@@ -71,7 +73,7 @@ const std::string ChessBoardFragmentShader = R"(
     vec3 norm = normalize(vec3(0.0, 1.0, 0.0));
     vec3 lightDir = normalize(u_lightPos - vec3(vs_tcoords.x, 0.0, vs_tcoords.y));
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = u_lightColor * (diff * fragColor.rgb);
+    vec3 diffuse = u_lightColor * (diff * fragColor.rgb)*diffuseStrength;
 
     float specularStrength = 0.2;
     vec3 viewDir = normalize(u_viewPos - vec3(vs_tcoords.x, 0.0, vs_tcoords.y));
@@ -133,6 +135,8 @@ uniform vec3 u_lightPos;
 uniform vec3 u_lightColor;
 uniform vec3 u_viewPos;
 uniform float ambientStrength;
+uniform float specularStrength;
+uniform float diffuseStrength;
 uniform int u_texture = 0;
 
 layout(binding = 1) uniform samplerCube u_pieceTextureSampler;
@@ -144,7 +148,7 @@ void main()
     vec3 norm = normalize(fs_in.fragNormal);
     vec3 lightDir = normalize(u_lightPos - fs_in.fragPosition);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = u_lightColor * (diff * u_cubeColor.rgb);
+    vec3 diffuse = u_lightColor * (diff * u_cubeColor.rgb)*diffuseStrength;
 
     float specularStrength = 0.5; // Adjust as needed
     vec3 viewDir = normalize(u_viewPos - fs_in.fragPosition);

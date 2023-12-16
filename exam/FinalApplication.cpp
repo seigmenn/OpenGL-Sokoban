@@ -26,7 +26,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 void keyInput(GLFWwindow* window, PerspectiveCamera* camera,
-              glm::vec2 &currentPlayerPos, std::vector<glm::vec3>& gridPos, int & texture, std::vector<int> & chessPiecePos, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
+              glm::vec2 &currentPlayerPos, std::vector<glm::vec3>& gridPos, int & texture, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
         ,const std::vector<int>& targetPositions);
 
 // -----------------------------------------------------------------------------
@@ -51,21 +51,6 @@ std::cerr << "GL CALLBACK: "
 // -----------------------------------------------------------------------------
 //  GLFW ERROR CALLBACK
 // -----------------------------------------------------------------------------
-/**
- * checkPlacement checks whether a movable piece is on a target position
- * @param movablePiece the position of the movable piece
- * @param targetPositions the position of the targets
- * @param boxOnTarget an array of bools that is true if a box is on a target position
- * */
-void checkPlacement(const std::vector<int>& movablePiece, const std::vector<int>& targetPositions, std::vector<glm::vec2> boxOnTarget){
-    boxOnTarget.clear();
-
-    for (int i = 0; i < movablePiece.size(); i++) {
-        int currentPiece = movablePiece[i];
-        bool isOnTarget = (std::find(targetPositions.begin(), targetPositions.end(), currentPiece) != targetPositions.end());
-        boxOnTarget.push_back(glm::vec2(currentPiece, isOnTarget ? 1.0f : 0.0f));
-    }
-}
 
 /**
  * moveBox moves the box in the direction the player wants to move
@@ -78,10 +63,10 @@ void checkPlacement(const std::vector<int>& movablePiece, const std::vector<int>
 int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
     glm::vec2 newPosition = playerPos;
     switch(direction){
-        case 1: //Up
+        case 1: //Down
             newPosition.y += 2;
             break;
-        case 2: //Down
+        case 2: //Up
             newPosition.y -= 2;
             break;
         case 3: //Left
@@ -115,10 +100,10 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
     // Calculate the new position based on the direction
     glm::vec2 newPosition = currentPlayerPos;
     switch (direction) {
-        case 1: // Up
+        case 1: // Down
             newPosition.y += 1;
             break;
-        case 2: // Down
+        case 2: // Up
             newPosition.y -= 1;
             break;
         case 3: // Left
@@ -147,13 +132,14 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
     for (int i = 0; i < movablePieces.size(); i++) {
         int movableIndex = movablePieces[i];
         if (gridPos[newPosition.x * gridSize + newPosition.y] == gridPos[movableIndex]) {
-            // Check if the chessboard piece behind the movable piece is free
+            // Check if the chessboard piece behind the movable piece is free by determining the new position and then
+            //rechecking surrounding pillars, movable pieces and out of bounds
             glm::vec2 behindMovable = newPosition;
             switch (direction) {
-                case 1: // Up
+                case 1: // Down
                     behindMovable.y += 1;
                     break;
-                case 2: // Down
+                case 2: // Up
                     behindMovable.y -= 1;
                     break;
                 case 3: // Left
@@ -162,19 +148,17 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
                 case 4: // Right
                     behindMovable.x += 1;
                     break;
-                default:
-                    return false;
             }
             for (int j = 0; j < pillarPositions.size(); j++) {
                 int pillarIndex = pillarPositions[j];
                 if (gridPos[behindMovable.x * gridSize + behindMovable.y] == gridPos[pillarIndex]) {
-                    return true; // Collision with a pillar
+                    return true;
                 }
             }
             for(int k=0; k<movablePieces.size();k++){
                 movableIndex = movablePieces[k];
                 if(gridPos[behindMovable.x*gridSize+behindMovable.y] == gridPos[movableIndex]){
-                    return true; //Collision with another movable piece
+                    return true;
                 }
             }
             if(behindMovable.x < 1 || behindMovable.x >= (gridSize-1) || behindMovable.y < 1 || behindMovable.y >= (gridSize-1)){
@@ -189,11 +173,6 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
     // No collision detected
     return false;
 }
-
-
-
-
-
 
 FinalApplication::FinalApplication(const std::string& name, const std::string& version) {
     std::cout << "\tName: " << name << "\n\tVersion: " << version << std::endl;
@@ -220,9 +199,7 @@ unsigned int FinalApplication::Init() {
  * */
 unsigned int FinalApplication::Run() const{
 
-    //NB TEMP LØSNING
     const std::string TEXTURES_DIR = "resources/textures/";
-
     bool running = true;
 
     //Enable detailed messages for debug
@@ -233,9 +210,8 @@ unsigned int FinalApplication::Run() const{
 
     glm::vec4 player1Col = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
     glm::vec4 player2Col = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-    glm::vec4 selectorCol = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-    glm::vec4 selectedCol = glm::vec4(1.0f,1.0f,0.3f,1.0f);
-    std::vector<int> chessPiecePos;
+
+    //Setting the grid of the chessboard which everything else is placed within
     std::vector<glm::vec3> gridPos;
     float X = 10;	//X size of chessboard
     float Y = 10;	//Y size of chessboard
@@ -243,7 +219,8 @@ unsigned int FinalApplication::Run() const{
     float offset = 0.4f;
     float squareSize = 0.1f; // size of each square in world units
 
-// Set position of wall pieces
+// Set position of wall
+    std::vector<int> chessPiecePos;
     for (int i = 0; i < X; i++) {
         for (int j = 0; j < Y; j++) {
             float x = (i - 0.5f) * squareSize - offset; // calculate x position of square
@@ -257,22 +234,11 @@ unsigned int FinalApplication::Run() const{
         }
     }
 
+    //Create chessboard and its indices and chessboard pieces (cubes) and their indices
     auto chessSquare = GeometricTools::UnitGridGeometry2D(X, Y);
     auto chessIndices = GeometricTools::ChessIndices(X, Y);
     auto chessPieceVertices = GeometricTools::createChessPieceVertices(squareSize);
     auto chessPieceIndices = GeometricTools::createChessPieceIndices();
-
-    //Create a cube for the player
-    auto playerCube = GeometricTools::UnitCube3D24WNormals;
-    auto playerCubeTopology = GeometricTools::cubeTopologyWNormals;
-    auto playerCubeVAO = std::make_shared<VertexArray>();
-    auto playerCubeIBO = std::make_shared<IndexBuffer>(playerCubeTopology.data(), playerCubeTopology.size());
-    auto playerCubeBufferLayout = BufferLayout({{ShaderDataType::Float3, "position"}, {ShaderDataType::Float3, "normals"}});
-    auto playerCubeVBO = std::make_shared<VertexBuffer>(playerCube.data(), playerCube.size()*sizeof(playerCube[0]));
-    playerCubeVBO->SetLayout(playerCubeBufferLayout);
-    playerCubeVAO->AddVertexBuffer(playerCubeVBO);
-    playerCubeVAO->SetIndexBuffer(playerCubeIBO);
-    playerCubeVAO->Unbind();
 
     //Creating a random start position for the player within the chessboard
     glm::vec2 playerPos = {
@@ -290,39 +256,20 @@ unsigned int FinalApplication::Run() const{
         // Check if the pillar position collides with existing pillars or the player
         if (std::find(pillarPositions.begin(), pillarPositions.end(), posx * X + posz) != pillarPositions.end() ||
             (posx == playerPos.x && posz == playerPos.y)) {
-            i--;  // Retry with a new random position
+            i--;  // Retry with a new position
             continue;
         }
 
         pillarPositions.push_back(posx * X + posz);
     }
 
-
-
-
-    //Create pillars
-    auto pillarVertices = GeometricTools::createChessPieceVertices(squareSize);
-    auto pillarIndices = GeometricTools::createChessPieceIndices();
-    std::shared_ptr<VertexBuffer> pillarVB = std::make_shared<VertexBuffer>(pillarVertices.data(),pillarVertices.size()*sizeof(pillarVertices[0]));
-    std::shared_ptr<IndexBuffer> pillarIB = std::make_shared<IndexBuffer>(pillarIndices.data(), pillarIndices.size());
-    std::shared_ptr<VertexArray> pillarVA = std::make_shared<VertexArray>();
-
-    auto pillarBufferLayout = BufferLayout({
-                                                 {ShaderDataType::Float3, "position"},
-                                                 {ShaderDataType::Float3, "normals"}
-                                         });
-    pillarVA->Bind();
-    pillarVB->SetLayout(pillarBufferLayout);
-    pillarVA->AddVertexBuffer(pillarVB);
-    pillarVA->SetIndexBuffer(pillarIB);
-    pillarVA->Unbind();
-
+    //Movable pieces/boxes
     std::vector<int> movablePieces;
     for (int i = 0; i < 6; i++) {
         auto posx = (rand() % 8 + 1) * X;
         auto posz = (rand() % 8 + 1);
 
-        // Check if the movable piece position collides with pillars, the player, other movable pieces, or targets
+        // Check if the movable piece position collides with pillars, the player, or other movable pieces
         if (std::find(pillarPositions.begin(), pillarPositions.end(), posx + posz) != pillarPositions.end() ||
             (posx + posz == playerPos.x * X + playerPos.y) ||
             std::find(movablePieces.begin(), movablePieces.end(), posx + posz) != movablePieces.end()) {
@@ -332,6 +279,7 @@ unsigned int FinalApplication::Run() const{
 
         movablePieces.push_back(posx + posz);
     }
+
     //Targets
     std::vector<int> targetPositions;
     for (int i = 0; i < 6; i++) {
@@ -357,7 +305,7 @@ unsigned int FinalApplication::Run() const{
     std::shared_ptr<VertexBuffer> ChessVB = std::make_shared<VertexBuffer>(chessSquare.data(),chessSquare.size()*sizeof(chessSquare[0]));
     std::shared_ptr<IndexBuffer> ChessIB = std::make_shared<IndexBuffer>(chessIndices.data(), chessIndices.size());
     std::shared_ptr<VertexArray> ChessVA = std::make_shared<VertexArray>();
-    //Walls
+    //Cubes
     std::shared_ptr<VertexBuffer> chessPieceVB = std::make_shared<VertexBuffer>(chessPieceVertices.data(), chessPieceVertices.size() * sizeof(chessPieceVertices[0]));
     std::shared_ptr<IndexBuffer> chessPieceIB = std::make_shared<IndexBuffer>(chessPieceIndices.data(), chessPieceIndices.size());
     std::shared_ptr<VertexArray> chessPieceVA = std::make_shared<VertexArray>();
@@ -382,10 +330,7 @@ unsigned int FinalApplication::Run() const{
     chessPieceVA->SetIndexBuffer(chessPieceIB);
     chessPieceVA->Unbind();
 
-    glm::vec2 selectorPos = {0,0};
-
-
-
+    //Creating shaders
     std::shared_ptr<Shader> chessBoardShader = std::make_shared<Shader>(ChessBoardVertexShader, ChessBoardFragmentShader);
     std::shared_ptr<Shader> chessPieceShader = std::make_shared<Shader>(ChessPieceVertexShader, ChessPieceFragmentShader);
 
@@ -400,6 +345,7 @@ unsigned int FinalApplication::Run() const{
         return -1;
     }
 
+    //Loading textures for floor and cubes/walls
     TextureManager* textureManager = TextureManager::GetInstance();
     textureManager->LoadTexture2DRGBA("floor", std::string(TEXTURES_DIR) + std::string("floor_texture.png"),0);
     textureManager->LoadCubeMapRGBA("cube", std::string(TEXTURES_DIR) + std::string("cube_texture.png"),1);
@@ -409,34 +355,35 @@ unsigned int FinalApplication::Run() const{
     camera->SetLookAt(glm::vec3(0.0f));
     glm::vec2 currentPlayerPos = { playerPos.x, playerPos.y};
 
+    //Setting a global lightPosition/lightColor
     glm::vec3 lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
     glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 
     glEnable(GL_DEPTH_TEST);
-    int drawTexture = 0;
 
+    //To determine whether textures should be drawn or not
+    int drawTexture = 0;
+    int startTime = glfwGetTime();
     do
     {
         RenderCommands::Clear();
+
         //Time
         double currentTime = glfwGetTime();
-        double lastTime = currentTime;
-        double deltaTime = currentTime - lastTime;
-
-        float speed = 0.3f;
-        float sunRadius = 1.0f;
+        double deltaTime = fmod(currentTime-startTime, 45.0);
+        float rotationSun = (2*glm::two_pi<float>()/45.0f)*deltaTime;
+        sunPos = glm::vec3(X*squareSize*0.5f-offset, 1.0f, Y*squareSize*0.5f-offset);
 
         float maxAmbi = 0.3f;
         float minAmbi = 0.1f;
-        double oneRotation = 2.0*glm::pi<double>()/speed;
-        double elapsedTime = glm::mod(currentTime,oneRotation);
 
-        sunPos.x = sunRadius*sin(speed*currentTime);
-        sunPos.y = sunRadius*cos(speed*currentTime);
+        glm::mat4 rotationSunMatrix = glm::rotate(glm::mat4(1.0f), rotationSun, glm::vec3(0.0f, 0.0f, 1.0f));
+        sunPos= rotationSunMatrix*glm::vec4(sunPos,1.0f);
+
         lightPosition = sunPos;
         float ambientStrength = glm::mix(minAmbi, maxAmbi,glm::clamp(sunPos.y, minAmbi, maxAmbi) );
-
-
+        float diffuseStrength = glm::mix(0.0f, 1.0f, glm::clamp(sunPos.y, 0.0f, 1.0f));
+        float specularStrength = glm::mix(0.0f, 1.0f, glm::clamp(sunPos.y, 0.0f, 1.0f));
 
         // Define the desired position of the chessboard
         glm::vec3 chessboardPosition = glm::vec3(0.0f, 0.0f, 0.0f); // Adjust as needed
@@ -457,6 +404,8 @@ unsigned int FinalApplication::Run() const{
         chessBoardShader->setInt("u_texture",drawTexture);
         chessBoardShader->SetUniform3f("u_lightPos", lightPosition);
         chessPieceShader->setFloat("ambientStrength", ambientStrength);
+        chessPieceShader->setFloat("diffuseStrength", diffuseStrength);
+        chessPieceShader->setFloat("specularStrength", specularStrength);
         chessBoardShader->SetUniform3f("u_lightColor", lightColor);
         chessBoardShader->SetUniform3f("u_viewPos", camera->GetPosition());
 
@@ -470,6 +419,8 @@ unsigned int FinalApplication::Run() const{
         chessPieceShader->SetUniform3f("u_lightPos", lightPosition);
         chessPieceShader->SetUniform3f("u_lightColor", lightColor);
         chessPieceShader->setFloat("ambientStrength", ambientStrength);
+        chessPieceShader->setFloat("diffuseStrength", diffuseStrength);
+        chessPieceShader->setFloat("specularStrength", specularStrength);
         chessPieceShader->SetUniform3f("u_viewPos", camera->GetPosition());
         chessPieceShader->SetUniform4f("u_cubeColor", player2Col);
 
@@ -521,7 +472,7 @@ unsigned int FinalApplication::Run() const{
         //Draw boxes
         for(int i=0; i<movablePieces.size();i++){
            chessPieceShader->use();
-            scaleFactor = 0.4;
+            scaleFactor = 0.5;
             scaleMatrix = glm::scale(glm::mat4(1.0f),glm::vec3(scaleFactor));
            translationMatrix = glm::translate(glm::mat4(1.0f), gridPos[movablePieces[i]]);
            model = translationMatrix * rotationMatrix * scaleMatrix;
@@ -554,9 +505,9 @@ unsigned int FinalApplication::Run() const{
             chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(0.0f,0.0f,1.0f,1.0f));
             chessPieceShader->setInt("u_texture",drawTexture);
 
-            pillarVA->Bind();
-            RenderCommands::DrawIndex(pillarVA, GL_TRIANGLES);
-            pillarVA->Unbind();
+            chessPieceVA->Bind();
+            RenderCommands::DrawIndex(chessPieceVA, GL_TRIANGLES);
+            chessPieceVA->Unbind();
         }
 
         //Draw targets
@@ -595,7 +546,7 @@ unsigned int FinalApplication::Run() const{
         RenderCommands::DrawIndex(chessPieceVA, GL_TRIANGLES);
         chessPieceVA->Unbind();
 
-        keyInput(window, camera, currentPlayerPos, gridPos,drawTexture, chessPiecePos, movablePieces,pillarPositions, targetPositions);
+        keyInput(window, camera, currentPlayerPos, gridPos,drawTexture, movablePieces,pillarPositions, targetPositions);
 
         glfwWaitEventsTimeout(0.15);
         glfwSwapBuffers(window);
@@ -626,7 +577,7 @@ unsigned int FinalApplication::Run() const{
  *  @param targetPositions The positions of the targets
  * **/
 void keyInput(GLFWwindow* window, PerspectiveCamera* camera,
-              glm::vec2& currentPlayerPos, std::vector<glm::vec3>& gridPos, int &texture, std::vector<int> &chessPiecePos, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
+              glm::vec2& currentPlayerPos, std::vector<glm::vec3>& gridPos, int &texture, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
               ,const std::vector<int>& targetPositions){
     float angle = 0.1f;
 
@@ -656,13 +607,13 @@ void keyInput(GLFWwindow* window, PerspectiveCamera* camera,
     if ((glfwGetKey(window,GLFW_KEY_T) == GLFW_PRESS)) {
         texture = static_cast<bool>(!texture);
     }
-    if(glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS){
+    if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS){
         if(currentPlayerPos.y < 8){
         if(!checkOccupied(currentPlayerPos, 1, gridPos, movablePieces, pillarPositions,targetPositions))
             currentPlayerPos.y += 1;
         }
     }
-    if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS){
+    if(glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS){
         if(currentPlayerPos.y > 1){
             if(!checkOccupied(currentPlayerPos, 2, gridPos, movablePieces, pillarPositions,targetPositions))
                 currentPlayerPos.y -= 1;
