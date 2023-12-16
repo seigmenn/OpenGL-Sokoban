@@ -25,8 +25,8 @@
 #include "iomanip"
 #include <glm/gtc/type_ptr.hpp>
 
-void keyInput(GLFWwindow* window, bool& pressed, bool& wireframeMode, PerspectiveCamera* camera,
-              glm::vec2 &currentPlayerPos, std::vector<glm::vec3>& gridPos, int & texture, std::vector<int> & chessPiecePos, int &selectedPiece,std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
+void keyInput(GLFWwindow* window, PerspectiveCamera* camera,
+              glm::vec2 &currentPlayerPos, std::vector<glm::vec3>& gridPos, int & texture, std::vector<int> & chessPiecePos, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
         ,const std::vector<int>& targetPositions);
 
 // -----------------------------------------------------------------------------
@@ -51,15 +51,30 @@ std::cerr << "GL CALLBACK: "
 // -----------------------------------------------------------------------------
 //  GLFW ERROR CALLBACK
 // -----------------------------------------------------------------------------
-void checkPlacement(const std::vector<int>& movablePiece, const std::vector<int>& targetPositions, bool boxOnTarget[6]){
-    //Check whether a movable piece is on a target position
-    for(int i = 0; i < targetPositions.size(); i++){
-        if(std::find(movablePiece.begin(), movablePiece.end(), targetPositions[i]) == movablePiece.end()){
-            boxOnTarget[i] = true;
+/**
+ * checkPlacement checks whether a movable piece is on a target position
+ * @param movablePiece the position of the movable piece
+ * @param targetPositions the position of the targets
+ * @param boxOnTarget an array of bools that is true if a box is on a target position
+ * */
+void checkPlacement(const std::vector<int>& movablePiece, const std::vector<int>& targetPositions, std::vector<glm::vec2> boxOnTarget){
+    boxOnTarget.clear();
+
+    for (int i = 0; i < movablePiece.size(); i++) {
+        int currentPiece = movablePiece[i];
+        bool isOnTarget = (std::find(targetPositions.begin(), targetPositions.end(), currentPiece) != targetPositions.end());
+        boxOnTarget.push_back(glm::vec2(currentPiece, isOnTarget ? 1.0f : 0.0f));
     }
 }
-}
 
+/**
+ * moveBox moves the box in the direction the player wants to move
+ * @param movablePiece the position of the movable piece
+ * @param playerPos the position of the player
+ * @param direction the direction the player wants to move
+ *
+ * @return the new position of the movable piece
+ * */
 int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
     glm::vec2 newPosition = playerPos;
     switch(direction){
@@ -82,7 +97,17 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
     return movablePiece;
 
 }
-
+/**
+ *  checkOccupied checks if the new position the player wants to move to is occupied
+ *  @param currentPlayerPos the current position of the player
+ *  @param direction the direction the player wants to move
+ *  @param gridPos the entire chessboard grid
+ *  @param movablePieces the position of the movable pieces
+ *  @param pillarPositions the position of the pillars
+ *  @param targetPositions the position of the targets
+ *
+ *  @return true if the new position is occupied, false if it is free
+ * */
  bool checkOccupied(glm::vec2& currentPlayerPos, int direction, const std::vector<glm::vec3>& gridPos, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions,
                     const std::vector<int>& targetPositions) {
     int gridSize = 10;
@@ -103,12 +128,11 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
             newPosition.x += 1;
             break;
         default:
-            return false; // Invalid direction
+            return false;
     }
 
-    // Check if the new position is within bounds
-    if (newPosition.x < 0 || newPosition.x >= (gridSize-2) || newPosition.y < 0 || newPosition.y >= (gridSize-2)) {
-        return true; // Out of bounds
+    if (newPosition.x < 0 || newPosition.x >= (gridSize) || newPosition.y < 0 || newPosition.y >= (gridSize)) {
+        return true; //Collision with wall
     }
 
     // Check for collisions with pillars
@@ -139,12 +163,22 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
                     behindMovable.x += 1;
                     break;
                 default:
-                    return false; // Invalid direction
+                    return false;
             }
-
-            // Check if the chessboard piece behind the movable piece is free
-            if (checkOccupied(behindMovable, direction, gridPos, movablePieces, pillarPositions,targetPositions)) {
-                return true; // Collision with a movable piece
+            for (int j = 0; j < pillarPositions.size(); j++) {
+                int pillarIndex = pillarPositions[j];
+                if (gridPos[behindMovable.x * gridSize + behindMovable.y] == gridPos[pillarIndex]) {
+                    return true; // Collision with a pillar
+                }
+            }
+            for(int k=0; k<movablePieces.size();k++){
+                movableIndex = movablePieces[k];
+                if(gridPos[behindMovable.x*gridSize+behindMovable.y] == gridPos[movableIndex]){
+                    return true; //Collision with another movable piece
+                }
+            }
+            if(behindMovable.x < 1 || behindMovable.x >= (gridSize-1) || behindMovable.y < 1 || behindMovable.y >= (gridSize-1)){
+                return true;
             }
             else{
                 movablePieces[i] = moveBox(movablePieces[i], currentPlayerPos, direction);
@@ -168,6 +202,10 @@ FinalApplication::~FinalApplication() {
 
 }
 
+/**
+ *  Initialization of the GLFW window
+ *  @return 0 if success
+ * */
 unsigned int FinalApplication::Init() {
     width = 1024;
     height = 1024;
@@ -175,8 +213,11 @@ unsigned int FinalApplication::Init() {
     return 0;
 }
 
-// Run function
 
+/**
+ *  Run function containing the main loop of the application
+ *  @return 0 if success
+ * */
 unsigned int FinalApplication::Run() const{
 
     //NB TEMP LØSNING
@@ -254,11 +295,9 @@ unsigned int FinalApplication::Run() const{
         }
 
         pillarPositions.push_back(posx * X + posz);
-        printf("Pillar %d: %f, %f\n", i, posx, posz);
     }
 
-// Make sure to print the final count
-    printf("Number of pillars: %zu\n", pillarPositions.size());
+
 
 
     //Create pillars
@@ -292,7 +331,6 @@ unsigned int FinalApplication::Run() const{
         }
 
         movablePieces.push_back(posx + posz);
-        printf("Movable piece %d: %f, %f\n", i, posx, posz);
     }
     //Targets
     std::vector<int> targetPositions;
@@ -310,8 +348,10 @@ unsigned int FinalApplication::Run() const{
         }
 
         targetPositions.push_back(posx + posz);
-        printf("Target %d: %f, %f\n", i, posx, posz);
     }
+
+    //Sun for task 5
+    glm::vec3 sunPos = glm::vec3(X * squareSize*0.5f-offset, 1.0f, Y * squareSize * 0.5f-offset);
 
     //ChessBoard
     std::shared_ptr<VertexBuffer> ChessVB = std::make_shared<VertexBuffer>(chessSquare.data(),chessSquare.size()*sizeof(chessSquare[0]));
@@ -373,18 +413,29 @@ unsigned int FinalApplication::Run() const{
     glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 
     glEnable(GL_DEPTH_TEST);
-    bool wireframeMode = false;
-    bool boxOnTarget[6] = {false,false,false,false,false,false};
     int drawTexture = 0;
-    bool pressed = false;
-    int selectedPiece = -1;
+
     do
     {
         RenderCommands::Clear();
         //Time
-        float currentFrame = static_cast<float>(glfwGetTime());
-        auto lastFrame = currentFrame;
-        auto deltaTime = currentFrame - lastFrame;
+        double currentTime = glfwGetTime();
+        double lastTime = currentTime;
+        double deltaTime = currentTime - lastTime;
+
+        float speed = 0.3f;
+        float sunRadius = 1.0f;
+
+        float maxAmbi = 0.3f;
+        float minAmbi = 0.1f;
+        double oneRotation = 2.0*glm::pi<double>()/speed;
+        double elapsedTime = glm::mod(currentTime,oneRotation);
+
+        sunPos.x = sunRadius*sin(speed*currentTime);
+        sunPos.y = sunRadius*cos(speed*currentTime);
+        lightPosition = sunPos;
+        float ambientStrength = glm::mix(minAmbi, maxAmbi,glm::clamp(sunPos.y, minAmbi, maxAmbi) );
+
 
 
         // Define the desired position of the chessboard
@@ -405,6 +456,7 @@ unsigned int FinalApplication::Run() const{
         chessBoardShader->setMat4("u_modMat",model);
         chessBoardShader->setInt("u_texture",drawTexture);
         chessBoardShader->SetUniform3f("u_lightPos", lightPosition);
+        chessPieceShader->setFloat("ambientStrength", ambientStrength);
         chessBoardShader->SetUniform3f("u_lightColor", lightColor);
         chessBoardShader->SetUniform3f("u_viewPos", camera->GetPosition());
 
@@ -417,16 +469,13 @@ unsigned int FinalApplication::Run() const{
         chessPieceShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
         chessPieceShader->SetUniform3f("u_lightPos", lightPosition);
         chessPieceShader->SetUniform3f("u_lightColor", lightColor);
+        chessPieceShader->setFloat("ambientStrength", ambientStrength);
         chessPieceShader->SetUniform3f("u_viewPos", camera->GetPosition());
+        chessPieceShader->SetUniform4f("u_cubeColor", player2Col);
 
         for(int i = 0; i < chessPiecePos.size(); i++) {
             chessPieceVA->Bind();
-            if (i == selectedPiece){
-                chessPieceShader->SetUniform4f("u_cubeColor", selectedCol);
-            }
-            else{
-                chessPieceShader->SetUniform4f("u_cubeColor", player2Col);
-            }
+
 
             chessPieceShader->setInt("u_texture",drawTexture);
 
@@ -452,20 +501,18 @@ unsigned int FinalApplication::Run() const{
         //Draw player cube
         chessPieceShader->use();
         rotationAngle = 0.0f; // Negative angle to look down
-
         // Create the translation matrix
         translationMatrix = glm::translate(glm::mat4(1.0f), gridPos[currentPlayerPos.x*X+currentPlayerPos.y]);
         rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationAngle), glm::vec3(1.0f, 0.0f, 0.0f));
 
         scaleFactor = 0.5;
         scaleMatrix = glm::scale(glm::mat4(1.0f),glm::vec3(scaleFactor));
-
         // Combine the translation, rotation and scale
         model = translationMatrix * rotationMatrix * scaleMatrix;
 
         chessPieceShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
         chessPieceShader->setMat4("u_pieceModMat",model);
-        chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(0.0f,1.0f,0.0f,1.0f));
+        chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(0.92f,1.0f,0.0f,1.0f));
 
         chessPieceVA->Bind();
         RenderCommands::DrawIndex(chessPieceVA, GL_TRIANGLES);
@@ -474,19 +521,18 @@ unsigned int FinalApplication::Run() const{
         //Draw boxes
         for(int i=0; i<movablePieces.size();i++){
            chessPieceShader->use();
-
             scaleFactor = 0.4;
             scaleMatrix = glm::scale(glm::mat4(1.0f),glm::vec3(scaleFactor));
            translationMatrix = glm::translate(glm::mat4(1.0f), gridPos[movablePieces[i]]);
            model = translationMatrix * rotationMatrix * scaleMatrix;
+            chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(1.0f,0.0f,1.0f,1.0f));
 
               chessPieceShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
               chessPieceShader->setMat4("u_pieceModMat",model);
-              if(boxOnTarget[i]){
-                  chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(1.0f,0.0f,1.0f,0.2f));
-              }
-              else{
-                  chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(0.0f,1.0f,0.0f,1.0f));
+              for(int j=0; j<targetPositions.size();j++){
+                  if(movablePieces[i] == targetPositions[j]){
+                      chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(0.0f,1.0f,0.0f,1.0f));
+                  }
               }
 
            chessPieceVA->Bind();
@@ -532,10 +578,26 @@ unsigned int FinalApplication::Run() const{
             chessPieceVA->Unbind();
         };
 
-        checkPlacement(movablePieces, targetPositions, boxOnTarget);
-        keyInput(window, pressed, wireframeMode, camera, currentPlayerPos, gridPos,drawTexture, chessPiecePos, selectedPiece, movablePieces,pillarPositions, targetPositions);
+        //Draw sun
+        chessPieceShader->use();
+        chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(1.0f,1.0f,1.0f,1.0f));
+        chessPieceShader->setFloat("ambientStrength", 1.0f);
 
-        glfwWaitEventsTimeout(0.2);
+        scaleFactor = 0.5;
+        scaleMatrix = glm::scale(glm::mat4(1.0f),glm::vec3(scaleFactor));
+        translationMatrix = glm::translate(glm::mat4(1.0f), sunPos);
+        model = translationMatrix * rotationMatrix * scaleMatrix;
+
+        chessPieceShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
+        chessPieceShader->setMat4("u_pieceModMat",model);
+
+        chessPieceVA->Bind();
+        RenderCommands::DrawIndex(chessPieceVA, GL_TRIANGLES);
+        chessPieceVA->Unbind();
+
+        keyInput(window, camera, currentPlayerPos, gridPos,drawTexture, chessPiecePos, movablePieces,pillarPositions, targetPositions);
+
+        glfwWaitEventsTimeout(0.15);
         glfwSwapBuffers(window);
         glfwPollEvents();
 
@@ -551,10 +613,20 @@ unsigned int FinalApplication::Run() const{
 }
 
 /**
- *  keyInput
+ *  Handle key input
+ *  @param window The window to check for key input
+ *  @param camera The camera to move
+ *  @param currentPlayerPos The current position of the player
+ *  @param gridPos The positions of the chessboard squares
+ *  @param texture Whether to draw the texture or not
+ *  @param chessPiecePos The positions of the chess pieces
+ *  @param selectedPiece The index of the selected chess piece
+ *  @param movablePieces The positions of the movable pieces
+ *  @param pillarPositions The positions of the pillars
+ *  @param targetPositions The positions of the targets
  * **/
-void keyInput(GLFWwindow* window, bool& pressed, bool& wireframeMode, PerspectiveCamera* camera,
-              glm::vec2& currentPlayerPos, std::vector<glm::vec3>& gridPos, int &texture, std::vector<int> &chessPiecePos, int &selectedPiece, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
+void keyInput(GLFWwindow* window, PerspectiveCamera* camera,
+              glm::vec2& currentPlayerPos, std::vector<glm::vec3>& gridPos, int &texture, std::vector<int> &chessPiecePos, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
               ,const std::vector<int>& targetPositions){
     float angle = 0.1f;
 
@@ -585,21 +657,28 @@ void keyInput(GLFWwindow* window, bool& pressed, bool& wireframeMode, Perspectiv
         texture = static_cast<bool>(!texture);
     }
     if(glfwGetKey(window,GLFW_KEY_UP) == GLFW_PRESS){
-        if(!checkOccupied(currentPlayerPos, 1, gridPos, movablePieces, pillarPositions,targetPositions) && currentPlayerPos.y < 8){
+        if(currentPlayerPos.y < 8){
+        if(!checkOccupied(currentPlayerPos, 1, gridPos, movablePieces, pillarPositions,targetPositions))
             currentPlayerPos.y += 1;
         }
     }
     if(glfwGetKey(window,GLFW_KEY_DOWN) == GLFW_PRESS){
-        if(!checkOccupied(currentPlayerPos, 2, gridPos, movablePieces, pillarPositions,targetPositions) && currentPlayerPos.y > 0)
-            currentPlayerPos.y -= 1;
+        if(currentPlayerPos.y > 1){
+            if(!checkOccupied(currentPlayerPos, 2, gridPos, movablePieces, pillarPositions,targetPositions))
+                currentPlayerPos.y -= 1;
+        }
     }
     if(glfwGetKey(window,GLFW_KEY_LEFT) == GLFW_PRESS){
-        if(!checkOccupied(currentPlayerPos, 3, gridPos, movablePieces, pillarPositions,targetPositions) && currentPlayerPos.x > 0)
-            currentPlayerPos.x -= 1;
+        if( currentPlayerPos.x > 1) {
+            if (!checkOccupied(currentPlayerPos, 3, gridPos, movablePieces, pillarPositions, targetPositions))
+                currentPlayerPos.x -= 1;
+        }
     }
     if(glfwGetKey(window,GLFW_KEY_RIGHT) == GLFW_PRESS){
-        if(!checkOccupied(currentPlayerPos, 4, gridPos, movablePieces, pillarPositions ,targetPositions) && currentPlayerPos.x < 8)
+        if(currentPlayerPos.x < 8){
+        if(!checkOccupied(currentPlayerPos, 4, gridPos, movablePieces, pillarPositions ,targetPositions))
             currentPlayerPos.x += 1;
+        }
     }
 }
 
