@@ -403,9 +403,9 @@ unsigned int FinalApplication::Run() const{
         chessBoardShader->setMat4("u_modMat",model);
         chessBoardShader->setInt("u_texture",drawTexture);
         chessBoardShader->SetUniform3f("u_lightPos", lightPosition);
-        chessPieceShader->setFloat("ambientStrength", ambientStrength);
-        chessPieceShader->setFloat("diffuseStrength", diffuseStrength);
-        chessPieceShader->setFloat("specularStrength", specularStrength);
+        chessBoardShader->setFloat("ambientStrength", ambientStrength);
+        chessBoardShader->setFloat("diffuseStrength", diffuseStrength);
+        chessBoardShader->setFloat("specularStrength", specularStrength);
         chessBoardShader->SetUniform3f("u_lightColor", lightColor);
         chessBoardShader->SetUniform3f("u_viewPos", camera->GetPosition());
 
