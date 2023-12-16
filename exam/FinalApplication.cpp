@@ -348,7 +348,6 @@ unsigned int FinalApplication::Run() const{
 
     std::shared_ptr<Shader> chessBoardShader = std::make_shared<Shader>(ChessBoardVertexShader, ChessBoardFragmentShader);
     std::shared_ptr<Shader> chessPieceShader = std::make_shared<Shader>(ChessPieceVertexShader, ChessPieceFragmentShader);
-    std::shared_ptr<Shader> pillarShader = std::make_shared<Shader>(pillarVertexShader, pillarFragmentShader);
 
     chessBoardShader->use();
     glm::vec2 gridSize = { X,Y };
@@ -405,6 +404,9 @@ unsigned int FinalApplication::Run() const{
         chessBoardShader->setMat4("u_viewProjMat", camera->GetViewProjectionMatrix());
         chessBoardShader->setMat4("u_modMat",model);
         chessBoardShader->setInt("u_texture",drawTexture);
+        chessBoardShader->SetUniform3f("u_lightPos", lightPosition);
+        chessBoardShader->SetUniform3f("u_lightColor", lightColor);
+        chessBoardShader->SetUniform3f("u_viewPos", camera->GetPosition());
 
         ChessVA->Bind();
         RenderCommands::DrawIndex(ChessVA, GL_TRIANGLES);
@@ -494,18 +496,17 @@ unsigned int FinalApplication::Run() const{
 
         //Draw pillars
         for(int i=0; i<pillarPositions.size(); i++){
-            pillarShader->use();
-
+            chessPieceShader->use();
             translationMatrix = glm::translate(glm::mat4(1.0f), gridPos[pillarPositions[i]]);
             rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationAngle), glm::vec3(1.0f, 0.0f, 0.0f));
 
 
             model = translationMatrix * rotationMatrix * scaleMatrix;
 
-            pillarShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
-            pillarShader->setMat4("u_pieceModMat",model);
-            pillarShader->SetUniform4f("u_cubeColor", glm::vec4(0.0f,0.0f,1.0f,1.0f));
-            pillarShader->setInt("u_texture",drawTexture);
+            chessPieceShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
+            chessPieceShader->setMat4("u_pieceModMat",model);
+            chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(0.0f,0.0f,1.0f,1.0f));
+            chessPieceShader->setInt("u_texture",drawTexture);
 
             pillarVA->Bind();
             RenderCommands::DrawIndex(pillarVA, GL_TRIANGLES);
