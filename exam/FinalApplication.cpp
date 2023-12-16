@@ -6,32 +6,35 @@
 #include <string>
 #include <algorithm>
 #include <memory>
-#include <cstring>
 #include <glm/glm.hpp>
 #include "FinalApplication.h"
 #include "../../group_24/framework/Rendering/Shader.h"
 #include "../../group_24/framework/GeometricTools/GeometricTools.h"
 #include "../../group_24/framework/Rendering/IndexBuffer.h"
 #include "../../group_24/framework/Rendering/VertexBuffer.h"
-#include "../../group_24/framework/Rendering/BufferLayout.h"
 #include "../../group_24/framework/Rendering/VertexArray.h"
 #include "../../group_24/framework/Rendering/RenderCommands.h"
 #include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
 #include "../../group_24/framework/Rendering/PerspectiveCamera.h"
 #include "shaders.h"
 #include "../../group_24/framework/Rendering/OrthographicCamera.h"
 #include "../../group_24/framework/Rendering/TextureManager.h"
 #include "iomanip"
-#include <glm/gtc/type_ptr.hpp>
 
 void keyInput(GLFWwindow* window, PerspectiveCamera* camera,
               glm::vec2 &currentPlayerPos, std::vector<glm::vec3>& gridPos, int & texture, std::vector<int>& movablePieces, const std::vector<int>& pillarPositions
         ,const std::vector<int>& targetPositions);
 
-// -----------------------------------------------------------------------------
-//  MESSAGE CALLBACK
-// -----------------------------------------------------------------------------
+/**
+ *  Printing error messages from OpenGL
+ *  @param source The source of the error
+ *  @param type The type of the error
+ *  @param id The id of the error
+ *  @param severity The severity of the error
+ *  @param length The length of the error message
+ *  @param message The error message
+ *  @param userParam The user parameter
+ * */
 void GLAPIENTRY MessageCallback(GLenum source,
 GLenum type,
         GLuint id,
@@ -165,6 +168,7 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
                 return true;
             }
             else{
+                //Moving the box and updating its position
                 movablePieces[i] = moveBox(movablePieces[i], currentPlayerPos, direction);
                 return false;
             }
@@ -174,9 +178,18 @@ int moveBox(int movablePiece, glm::vec2 playerPos, int direction){
     return false;
 }
 
+/**
+ *  Final application constructor
+ *  @param name The name of the application
+ *  @param version The version of the application
+ * */
 FinalApplication::FinalApplication(const std::string& name, const std::string& version) {
     std::cout << "\tName: " << name << "\n\tVersion: " << version << std::endl;
 }
+
+/**
+ * Final application destructor
+ * */
 FinalApplication::~FinalApplication() {
 
 }
@@ -559,6 +572,7 @@ unsigned int FinalApplication::Run() const{
     } while (running);
 
     glfwDestroyWindow(window);
+    delete camera;
     glfwTerminate();
     return 0;
 }
