@@ -221,11 +221,6 @@ unsigned int FinalApplication::Run() const{
     auto chessPieceVertices = GeometricTools::createChessPieceVertices(squareSize);
     auto chessPieceIndices = GeometricTools::createChessPieceIndices();
 
-    std::vector<unsigned int> selectorIndices = {
-            0,1,2,
-            2,3,0
-    };
-
     //Create a cube for the player
     auto playerCube = GeometricTools::UnitCube3D24WNormals;
     auto playerCubeTopology = GeometricTools::cubeTopologyWNormals;
@@ -274,7 +269,8 @@ unsigned int FinalApplication::Run() const{
     std::shared_ptr<VertexArray> pillarVA = std::make_shared<VertexArray>();
 
     auto pillarBufferLayout = BufferLayout({
-                                                 {ShaderDataType::Float3, "position"}
+                                                 {ShaderDataType::Float3, "position"},
+                                                 {ShaderDataType::Float3, "normals"}
                                          });
     pillarVA->Bind();
     pillarVB->SetLayout(pillarBufferLayout);
@@ -330,7 +326,8 @@ unsigned int FinalApplication::Run() const{
                                                  {ShaderDataType::Float2, "position"}
                                          });
     auto chessPieceLayout = BufferLayout({
-                                                 {ShaderDataType::Float3, "position"}
+                                                 {ShaderDataType::Float3, "position"},
+                                                 {ShaderDataType::Float3, "normals"}
                                          });
 
     ChessVA->Bind();
@@ -373,6 +370,9 @@ unsigned int FinalApplication::Run() const{
     camera->SetLookAt(glm::vec3(0.0f));
     glm::vec2 currentPlayerPos = { playerPos.x, playerPos.y};
 
+    glm::vec3 lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
+    glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+
     glEnable(GL_DEPTH_TEST);
     bool wireframeMode = false;
     bool boxOnTarget[6] = {false,false,false,false,false,false};
@@ -382,6 +382,11 @@ unsigned int FinalApplication::Run() const{
     do
     {
         RenderCommands::Clear();
+        //Time
+        float currentFrame = static_cast<float>(glfwGetTime());
+        auto lastFrame = currentFrame;
+        auto deltaTime = currentFrame - lastFrame;
+
 
         // Define the desired position of the chessboard
         glm::vec3 chessboardPosition = glm::vec3(0.0f, 0.0f, 0.0f); // Adjust as needed
@@ -407,6 +412,11 @@ unsigned int FinalApplication::Run() const{
 
         //Draw walls:
         chessPieceShader->use();
+        chessPieceShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
+        chessPieceShader->SetUniform3f("u_lightPos", lightPosition);
+        chessPieceShader->SetUniform3f("u_lightColor", lightColor);
+        chessPieceShader->SetUniform3f("u_viewPos", camera->GetPosition());
+
         for(int i = 0; i < chessPiecePos.size(); i++) {
             chessPieceVA->Bind();
             if (i == selectedPiece){

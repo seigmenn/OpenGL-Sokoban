@@ -33,7 +33,7 @@ namespace GeometricTools {
 	};
 
 
-    std::vector<float> createChessPieceVertices(float size)
+    /*std::vector<float> createChessPieceVertices(float size)
     {
         float vertices[] = {
                 // Front face
@@ -74,7 +74,51 @@ namespace GeometricTools {
         };
 
         return std::vector<float>(std::begin(vertices), std::end(vertices));
+    }*/
+
+    std::vector<float> createChessPieceVertices(float size)
+    {
+        float vertices[] = {
+                // Front face
+                -size, -size, size, 0.0f, 0.0f, 1.0f,
+                size, -size, size, 0.0f, 0.0f, 1.0f,
+                size, size, size, 0.0f, 0.0f, 1.0f,
+                -size, size, size, 0.0f, 0.0f, 1.0f,
+
+                // Back face
+                -size, -size, -size, 0.0f, 0.0f, -1.0f,
+                -size, size, -size, 0.0f, 0.0f, -1.0f,
+                size, size, -size, 0.0f, 0.0f, -1.0f,
+                size, -size, -size, 0.0f, 0.0f, -1.0f,
+
+                // Left face
+                -size, size, size, -1.0f, 0.0f, 0.0f,
+                -size, size, -size, -1.0f, 0.0f, 0.0f,
+                -size, -size, -size, -1.0f, 0.0f, 0.0f,
+                -size, -size, size, -1.0f, 0.0f, 0.0f,
+
+                // Right face
+                size, size, size, 1.0f, 0.0f, 0.0f,
+                size, -size, size, 1.0f, 0.0f, 0.0f,
+                size, -size, -size, 1.0f, 0.0f, 0.0f,
+                size, size, -size, 1.0f, 0.0f, 0.0f,
+
+                // Top face
+                -size, size, size, 0.0f, 1.0f, 0.0f,
+                -size, size, -size, 0.0f, 1.0f, 0.0f,
+                size, size, -size, 0.0f, 1.0f, 0.0f,
+                size, size, size, 0.0f, 1.0f, 0.0f,
+
+                // Bottom face
+                -size, -size, size, 0.0f, -1.0f, 0.0f,
+                size, -size, size, 0.0f, -1.0f, 0.0f,
+                size, -size, -size, 0.0f, -1.0f, 0.0f,
+                -size, -size, -size, 0.0f, -1.0f, 0.0f
+        };
+
+        return std::vector<float>(std::begin(vertices), std::end(vertices));
     }
+
     std::vector<GLuint> cubeTopologyWNormals = {
             2,5,8,		5,8,11,		//Front
             6,9,12,		9,12,15,	//Right

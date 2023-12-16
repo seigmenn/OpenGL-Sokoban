@@ -66,7 +66,7 @@ const std::string ChessBoardFragmentShader = R"(
 			}
 			)";
 
-std::string ChessPieceFragmentShader = R"(
+/*std::string ChessPieceFragmentShader = R"(
     #version 460 core
 
     in vec4 vs_pos;
@@ -109,6 +109,71 @@ std::string ChessPieceVertexShader = R"(
         vs_pos = u_pieceModMat * vec4(position,1.0f);
         vs_texPos = position;
     }
+)";
+*/
+
+std::string ChessPieceVertexShader = R"(
+#version 460 core
+
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normals;
+
+out VS_OUT {
+    vec3 fragNormal;
+    vec3 fragPosition;
+    vec3 viewDir;
+} vs_out;
+
+uniform mat4 u_pieceViewProjMat;
+uniform mat4 u_pieceModMat;
+
+void main()
+{
+    gl_Position = u_pieceViewProjMat * u_pieceModMat * vec4(position, 1.0);
+    vs_out.fragNormal = mat3(transpose(inverse(u_pieceModMat))) * normals;
+    vs_out.fragPosition = vec3(u_pieceModMat * vec4(position, 1.0));
+    vs_out.viewDir = vec3(0.0, 0.0, 1.0); // Replace with actual view direction if available
+}
+
+)";
+
+std::string ChessPieceFragmentShader = R"(
+#version 460 core
+
+in VS_OUT {
+    vec3 fragNormal;
+    vec3 fragPosition;
+    vec3 viewDir;
+} fs_in;
+
+out vec4 FragColor;
+
+uniform vec4 u_cubeColor; // Material color
+uniform vec3 u_lightPos;  // Light position in world space
+uniform vec3 u_lightColor; // Light color
+uniform vec3 u_viewPos;   // Camera (view) position
+
+void main()
+{
+    float ambientStrength = 0.1;
+    vec3 ambient = ambientStrength * u_lightColor;
+
+    vec3 norm = normalize(fs_in.fragNormal);
+    vec3 lightDir = normalize(u_lightPos - fs_in.fragPosition);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = u_lightColor * (diff * u_cubeColor.rgb);
+
+    float specularStrength = 0.5; // Adjust as needed
+    vec3 viewDir = normalize(u_viewPos - fs_in.fragPosition);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    vec3 specular = specularStrength * spec * u_lightColor;
+
+    vec3 result = (ambient + diffuse + specular) * u_cubeColor.rgb;
+
+    FragColor = vec4(result, u_cubeColor.a);
+}
+
 )";
 
 std::string pillarVertexShader = R"(

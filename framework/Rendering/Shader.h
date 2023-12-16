@@ -32,6 +32,7 @@ public:
         void SetUniform4f(const std::string& name, glm::vec4 v);
         void SetUniform3f(const std::string& name, glm::vec3 v);
         void SetUniform2f(const std::string& name, glm::vec2 v);
+        void setVec3(const std::string& name, const glm::vec3& value) const;
         
 private:
     int GetUniformLocation(const std::string& name);

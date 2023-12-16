@@ -45,7 +45,7 @@
         glUniform3f(GetUniformLocation(name.c_str()), v[0], v[1], v[2]);
     }
 
-    void Shader::SetUniform2f(const std::string& name, glm::vec2 v) {
+void Shader::SetUniform2f(const std::string& name, glm::vec2 v) {
         glUniform2f(GetUniformLocation(name.c_str()), v.x, v.y);
     }
     void Shader::setMat4(const std::string& name, const glm::mat4& mat) const
