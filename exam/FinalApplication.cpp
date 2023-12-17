@@ -573,6 +573,8 @@ unsigned int FinalApplication::Run() const{
 
     glfwDestroyWindow(window);
     delete camera;
+    chessPieceVA.reset();
+    ChessVA.reset();
     glfwTerminate();
     return 0;
 }
