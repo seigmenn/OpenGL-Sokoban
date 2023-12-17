@@ -221,9 +221,6 @@ unsigned int FinalApplication::Run() const{
     glDebugMessageCallback(MessageCallback, 0);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-    glm::vec4 player1Col = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-    glm::vec4 player2Col = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-
     //Setting the grid of the chessboard which everything else is placed within
     std::vector<glm::vec3> gridPos;
     float X = 10;	//X size of chessboard
@@ -330,13 +327,13 @@ unsigned int FinalApplication::Run() const{
                                                  {ShaderDataType::Float3, "position"},
                                                  {ShaderDataType::Float3, "normals"}
                                          });
-
+    //Binding and setting everything up for the chessboard
     ChessVA->Bind();
     ChessVB->SetLayout(gridBufferLayout);
     ChessVA->AddVertexBuffer(ChessVB);
     ChessVA->SetIndexBuffer(ChessIB);
     ChessVA->Unbind();
-
+    //Binding and setting everything up for the cubes
     chessPieceVA->Bind();
     chessPieceVB->SetLayout(chessPieceLayout);
     chessPieceVA->AddVertexBuffer(chessPieceVB);
@@ -351,6 +348,7 @@ unsigned int FinalApplication::Run() const{
     glm::vec2 gridSize = { X,Y };
     chessBoardShader->SetUniform2f("u_divisions", gridSize);
 
+    //Clearing the background
     glm::vec4 bColor = glm::vec4(0.2f,0.2f,0.2f,1.0f);
     RenderCommands::SetClearColor(bColor);   // background colour
     if (!window) {
@@ -366,35 +364,33 @@ unsigned int FinalApplication::Run() const{
     PerspectiveCamera* camera = new PerspectiveCamera();
 
     camera->SetLookAt(glm::vec3(0.0f));
+
     glm::vec2 currentPlayerPos = { playerPos.x, playerPos.y};
 
     //Setting a global lightPosition/lightColor
     glm::vec3 lightPosition = glm::vec3(1.2f, 1.0f, 2.0f);
     glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-
-    glEnable(GL_DEPTH_TEST);
+    int startTime = glfwGetTime();
 
     //To determine whether textures should be drawn or not
     int drawTexture = 0;
-    int startTime = glfwGetTime();
+
+    glEnable(GL_DEPTH_TEST);
     do
     {
         RenderCommands::Clear();
 
-        //Time
+        //Time functions for calculating the position of the sun
         double currentTime = glfwGetTime();
         double deltaTime = fmod(currentTime-startTime, 45.0);
         float rotationSun = (2*glm::two_pi<float>()/45.0f)*deltaTime;
         sunPos = glm::vec3(X*squareSize*0.5f-offset, 1.0f, Y*squareSize*0.5f-offset);
 
-        float maxAmbi = 0.3f;
-        float minAmbi = 0.1f;
-
         glm::mat4 rotationSunMatrix = glm::rotate(glm::mat4(1.0f), rotationSun, glm::vec3(0.0f, 0.0f, 1.0f));
         sunPos= rotationSunMatrix*glm::vec4(sunPos,1.0f);
 
         lightPosition = sunPos;
-        float ambientStrength = glm::clamp(sunPos.y, minAmbi, maxAmbi);
+        float ambientStrength = glm::clamp(sunPos.y, 0.1f, 0.3f);
         float diffuseStrength = glm::clamp(sunPos.y, 0.0f, 1.0f);
         float specularStrength = glm::clamp(sunPos.y, 0.0f, 1.0f);
 
@@ -411,6 +407,7 @@ unsigned int FinalApplication::Run() const{
         // Combine the translation and rotation
         glm::mat4 model = translationMatrix * rotationMatrix * scaleMatrix;
 
+        //Setting all the values for the chessboard shader
         chessBoardShader->use();
         chessBoardShader->setMat4("u_viewProjMat", camera->GetViewProjectionMatrix());
         chessBoardShader->setMat4("u_modMat",model);
@@ -426,7 +423,7 @@ unsigned int FinalApplication::Run() const{
         RenderCommands::DrawIndex(ChessVA, GL_TRIANGLES);
         ChessVA->Unbind();
 
-        //Draw walls:
+        //Set values for the cube shader
         chessPieceShader->use();
         chessPieceShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
         chessPieceShader->SetUniform3f("u_lightPos", lightPosition);
@@ -435,24 +432,18 @@ unsigned int FinalApplication::Run() const{
         chessPieceShader->setFloat("diffuseStrength", diffuseStrength);
         chessPieceShader->setFloat("specularStrength", specularStrength);
         chessPieceShader->SetUniform3f("u_viewPos", camera->GetPosition());
-        chessPieceShader->SetUniform4f("u_cubeColor", player2Col);
+        chessPieceShader->SetUniform4f("u_cubeColor", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
+        //Draw the walls around the chessboard
         for(int i = 0; i < chessPiecePos.size(); i++) {
             chessPieceVA->Bind();
 
 
             chessPieceShader->setInt("u_texture",drawTexture);
 
-            rotationAngle = 0.0f; // Negative angle to look down
-
-            // Create the translation matrix
             translationMatrix = glm::translate(glm::mat4(1.0f), gridPos[chessPiecePos[i]]);
-            rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-
             scaleFactor = 0.5f;
             scaleMatrix = glm::scale(glm::mat4(1.0f),glm::vec3(scaleFactor));
-
-            // Combine the translation, rotation and scale
             model = translationMatrix * rotationMatrix * scaleMatrix;
 
             chessPieceShader->setMat4("u_pieceModMat", model);
@@ -464,14 +455,8 @@ unsigned int FinalApplication::Run() const{
 
         //Draw player cube
         chessPieceShader->use();
-        rotationAngle = 0.0f; // Negative angle to look down
-        // Create the translation matrix
-        translationMatrix = glm::translate(glm::mat4(1.0f), gridPos[currentPlayerPos.x*X+currentPlayerPos.y]);
-        rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationAngle), glm::vec3(1.0f, 0.0f, 0.0f));
 
-        scaleFactor = 0.5;
-        scaleMatrix = glm::scale(glm::mat4(1.0f),glm::vec3(scaleFactor));
-        // Combine the translation, rotation and scale
+        translationMatrix = glm::translate(glm::mat4(1.0f), gridPos[currentPlayerPos.x*X+currentPlayerPos.y]);
         model = translationMatrix * rotationMatrix * scaleMatrix;
 
         chessPieceShader->setMat4("u_pieceViewProjMat", camera->GetViewProjectionMatrix());
@@ -508,7 +493,6 @@ unsigned int FinalApplication::Run() const{
         for(int i=0; i<pillarPositions.size(); i++){
             chessPieceShader->use();
             translationMatrix = glm::translate(glm::mat4(1.0f), gridPos[pillarPositions[i]]);
-            rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationAngle), glm::vec3(1.0f, 0.0f, 0.0f));
 
 
             model = translationMatrix * rotationMatrix * scaleMatrix;
