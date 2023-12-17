@@ -394,9 +394,9 @@ unsigned int FinalApplication::Run() const{
         sunPos= rotationSunMatrix*glm::vec4(sunPos,1.0f);
 
         lightPosition = sunPos;
-        float ambientStrength = glm::mix(minAmbi, maxAmbi,glm::clamp(sunPos.y, minAmbi, maxAmbi) );
-        float diffuseStrength = glm::mix(0.0f, 1.0f, glm::clamp(sunPos.y, 0.0f, 1.0f));
-        float specularStrength = glm::mix(0.0f, 1.0f, glm::clamp(sunPos.y, 0.0f, 1.0f));
+        float ambientStrength = glm::clamp(sunPos.y, minAmbi, maxAmbi);
+        float diffuseStrength = glm::clamp(sunPos.y, 0.0f, 1.0f);
+        float specularStrength = glm::clamp(sunPos.y, 0.0f, 1.0f);
 
         // Define the desired position of the chessboard
         glm::vec3 chessboardPosition = glm::vec3(0.0f, 0.0f, 0.0f); // Adjust as needed
