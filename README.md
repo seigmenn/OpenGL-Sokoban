@@ -3,6 +3,15 @@
 <br>
 The project was made for an exam in the course [PROG2002 Graphics Programming](https://www.ntnu.edu/studies/courses/PROG2002#tab=omEmnet).
 
+## External libraries
+
+- **glad**
+> [!IMPORTANT]
+> the glad submodule in the current repository is based on a local hosting of the submodule specifically for the PROG2002 course and is **not** publically available.
+- **[glfw](https://github.com/glfw/glfw/tree/2c1d31009fdc527d5a44ff887659a25ecbf1f7f0)**
+- **[glm](https://github.com/g-truc/glm/tree/586a402397dd35d66d7a079049856d1e2cbab300)**
+- **[stb](https://github.com/nothings/stb/tree/f4a71b13373436a2866c5d68f8f80ac6f0bc1ffe)**
+
 ## References
 **Lighting (Task 4 + Task 5b)**<br>
 Basic Lighting, *learnOpenGL* - https://learnopengl.com/Lighting/Basic-Lighting<br>
