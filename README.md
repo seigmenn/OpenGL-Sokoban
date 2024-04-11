@@ -1,5 +1,5 @@
 # OpenGL-Sokoban
-3D Sokoban game in OpenGL.
+3D Sokoban game using OpenGL.
 <br>
 The project was made for an exam in the course [PROG2002 Graphics Programming](https://www.ntnu.edu/studies/courses/PROG2002#tab=omEmnet).
 
