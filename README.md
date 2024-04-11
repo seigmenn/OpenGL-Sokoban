@@ -1,8 +1,7 @@
-# PROG2002 Exam Autumn 2023
-
-This is a template repository for the exam. The content of the exam will be released through *Inspera*.
-
-Use this `README.md` file to indicate any possible references you have used during your developments and to provide additional information that can help the evaluators.
+# OpenGL-Sokoban
+3D Sokoban game in OpenGL.
+<br>
+The project was made for an exam in the course [PROG2002 Graphics Programming](https://www.ntnu.edu/studies/courses/PROG2002#tab=omEmnet).
 
 ## References
 **Lighting (Task 4 + Task 5b)**<br>
@@ -18,7 +17,6 @@ Texture, *learnOpenGL* - https://learnopengl.com/Getting-started/Textures<br>
 Cubemaps, *learnOpenGL* - https://learnopengl.com/Advanced-OpenGL/Cubemaps<br>
 Issue 17 from the course "Adding blending"<br>
 Issue 16 from the course "Applying texture to the cube through cubemaps"<br>
-
 
 <br><br>
 A lot of code has also been based on code (or reused/modified) from the course's assignment: the chessboard.
